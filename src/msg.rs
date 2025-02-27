@@ -29,7 +29,10 @@ pub enum QueryMsg {
     GetCount {},
 
     #[returns(Vec<Donation>)]
-    GetDonations {}
+    GetDonations {},
+
+    #[returns(FundDetails)]
+    GetDetails {},
 }
 
 // We define a custom struct for each query response

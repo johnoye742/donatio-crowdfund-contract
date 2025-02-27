@@ -83,6 +83,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetCount {} => to_json_binary(&query::count(deps)?),
         QueryMsg::GetDonations {  } => {
             to_json_binary(&DONATIONS.load(deps.storage).unwrap_or(vec![]))
+        },
+        QueryMsg::GetDetails { } => {
+            to_json_binary(&DETAILS.load(deps.storage).unwrap())
         }
     }
 }
