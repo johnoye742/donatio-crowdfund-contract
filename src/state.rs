@@ -1,0 +1,38 @@
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
+use cosmwasm_std::{Addr, Coin, Uint128};
+use cw_storage_plus::Item;
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+pub struct State {
+    pub count: i32,
+    pub owner: Addr,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+pub struct Owner {
+    pub addr: Addr,
+    pub email: String,
+    pub fullname: String
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+pub struct FundDetails {
+    pub owner: Owner,
+    pub title: String,
+    pub description: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+pub struct Donation {
+    pub participant: Addr,
+    pub amount: Uint128
+}
+
+pub const STATE: Item<State> = Item::new("state");
+
+pub const DETAILS: Item<FundDetails> = Item::new("fund_details");
+
+pub const DONATIONS: Item<Vec<Donation>> = Item::new("fund_donations");
+
