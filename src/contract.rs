@@ -23,9 +23,11 @@ pub fn instantiate(
     DETAILS.save(deps.storage, &FundDetails {
         owner: Owner {
             addr: info.sender,
-            ..msg.details.owner
+            email: msg.email,
+            fullname: msg.fullname
         },
-        ..msg.details
+        title: msg.title,
+        description: msg.description
     })?;
 
     Ok(Response::new())

@@ -4,7 +4,10 @@ use crate::state::{Donation, FundDetails};
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub details: FundDetails
+    pub title: String,
+    pub description: String,
+    pub email: String,
+    pub fullname: String
 }
 
 
