@@ -7,7 +7,9 @@ pub struct InstantiateMsg {
     pub title: String,
     pub description: String,
     pub email: String,
-    pub fullname: String
+    pub fullname: String,
+    pub amount_to_be_raised: String,
+    pub denom: String
 }
 
 
