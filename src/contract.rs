@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{coins, to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{coins, to_json_binary, BankMsg, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128};
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
@@ -14,7 +14,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
@@ -27,7 +27,9 @@ pub fn instantiate(
             fullname: msg.fullname
         },
         title: msg.title,
-        description: msg.description
+        description: msg.description,
+        amount_to_be_raised: msg.amount_to_be_raised.parse::<Uint128>().unwrap(),
+        denom: msg.denom
     })?;
 
     Ok(Response::new())
@@ -40,15 +42,15 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
+    let details = DETAILS.load(deps.storage).unwrap();
     match msg {
         ExecuteMsg::Donate { message } => {
-            let amount = cw_utils::may_pay(&info, "eth").unwrap();
+            let amount = cw_utils::may_pay(&info, &details.denom).unwrap();
 
             let donation = Donation {
                 participant: info.sender,
                 amount
             };
-
             if donation.amount.u128() > 0 {
                 let mut donations = DONATIONS.load(deps.storage)?;
                 donations.push(donation.clone());
@@ -62,12 +64,11 @@ pub fn execute(
                 .add_attribute("amount", &donation.amount.to_string()))
         },
         ExecuteMsg::Withdraw {  } => {
-            let owner = DETAILS.load(deps.storage).unwrap().owner.addr;
+            let owner = &details.owner.addr;
 
-            if info.sender != &owner {
+            if info.sender != owner && deps.querier.query_balance(&env.contract.address, &details.denom).unwrap().amount < details.amount_to_be_raised {
                 Ok(Response::new())
             } else {
-                println!("coins at Withdraw point: {:?}", deps.querier.query_all_balances(&env.contract.address));
                 let msg = BankMsg::Send { to_address: (owner).to_string(), amount: deps.querier.query_all_balances(env.contract.address)? };
                 Ok(Response::new()
                     .add_message(msg))
@@ -101,26 +102,23 @@ pub mod query {
 
 #[cfg(test)]
 mod tests {
-    use crate::state::{FundDetails, Owner};
 
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coins, from_json};
-    use cw_multi_test::IntoAddr;
+    use cosmwasm_std::coins;
 
     #[test]
     fn proper_initialization() {
         let mut deps = mock_dependencies();
-        let fund_details = FundDetails {
-            owner: Owner {
-                addr: "owner".into_addr(),
-                email: String::from("example@email.com"),
-                fullname: String::from("John Doe")
-            },
+        let msg = InstantiateMsg {
+            email: String::from("example@email.com"),
+            fullname: String::from("John Doe"),
             title: String::from("Example crowdfund"),
-            description: String::from("need some funds")
+            description: String::from("need some funds"),
+            amount_to_be_raised: 500.to_string(),
+            denom: "usdc".into()
         };
-        let msg = InstantiateMsg { details: fund_details };
+
         let info = mock_info("creator", &coins(1000, "earth"));
 
         // we can just call .unwrap() to assert this was a success
