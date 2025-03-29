@@ -59,7 +59,8 @@ mod tests {
             title: String::from("Example crowdfund"),
             description: String::from("need some funds"),
             amount_to_be_raised: 500.to_string(),
-            denom: NATIVE_DENOM.into()
+            denom: NATIVE_DENOM.into(),
+            image_url: String::new()
         };
         let cw_template_contract_addr = app
             .instantiate_contract(
@@ -102,13 +103,6 @@ mod tests {
 
         }
 
-        fn get_donations(app: App, cw_template_contract: CwTemplateContract) -> Vec<Donation> {
-            let resp: Vec<Donation> = app.wrap()
-                .query_wasm_smart(cw_template_contract.addr(), &QueryMsg::GetDonations {  }).unwrap();
-
-            resp
-        }
-
         fn withdraw(mut app: App, cw_template_contract: CwTemplateContract) {
             println!("ADMIN balance before: {:?}", app.wrap().query_balance(ADMIN.into_addr(), NATIVE_DENOM));
             println!("USER balance before: {:?}", app.wrap().query_balance(USER.into_addr(), NATIVE_DENOM));
@@ -137,7 +131,8 @@ mod tests {
                 title: String::from("Example crowdfund"),
                 description: String::from("need some funds"),
                 amount_to_be_raised: Uint128::new(500),
-                denom: NATIVE_DENOM.into()
+                denom: NATIVE_DENOM.into(),
+                image_url: String::new()
             });
         }
 

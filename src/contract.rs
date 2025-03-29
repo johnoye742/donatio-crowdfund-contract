@@ -29,7 +29,8 @@ pub fn instantiate(
         title: msg.title,
         description: msg.description,
         amount_to_be_raised: msg.amount_to_be_raised.parse::<Uint128>().unwrap(),
-        denom: msg.denom
+        denom: msg.denom,
+        image_url: msg.image_url
     })?;
 
     Ok(Response::new())
@@ -69,7 +70,7 @@ pub fn execute(
             if info.sender != owner && deps.querier.query_balance(&env.contract.address, &details.denom).unwrap().amount < details.amount_to_be_raised {
                 Ok(Response::new())
             } else {
-                let msg = BankMsg::Send { to_address: (owner).to_string(), amount: deps.querier.query_all_balances(env.contract.address)? };
+                let msg = BankMsg::Send { to_address: (owner).to_string(), amount: vec![deps.querier.query_balance(env.contract.address, details.denom)?] };
                 Ok(Response::new()
                     .add_message(msg))
             }
@@ -116,7 +117,8 @@ mod tests {
             title: String::from("Example crowdfund"),
             description: String::from("need some funds"),
             amount_to_be_raised: 500.to_string(),
-            denom: "usdc".into()
+            denom: "usdc".into(),
+            image_url: String::new()
         };
 
         let info = mock_info("creator", &coins(1000, "earth"));

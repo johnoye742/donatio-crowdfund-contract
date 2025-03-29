@@ -23,7 +23,8 @@ pub struct FundDetails {
     pub title: String,
     pub description: String,
     pub amount_to_be_raised: Uint128,
-    pub denom: String
+    pub denom: String,
+    pub image_url: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
