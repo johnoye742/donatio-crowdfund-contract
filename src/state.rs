@@ -30,6 +30,7 @@ pub struct FundDetails {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Donation {
     pub participant: Addr,
+    pub message: String,
     pub amount: Uint128
 }
 

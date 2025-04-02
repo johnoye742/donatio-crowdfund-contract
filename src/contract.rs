@@ -50,7 +50,8 @@ pub fn execute(
 
             let donation = Donation {
                 participant: info.sender,
-                amount
+                amount,
+                message: msg.message
             };
             if donation.amount.u128() > 0 {
                 let mut donations = DONATIONS.load(deps.storage)?;
