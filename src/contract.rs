@@ -51,7 +51,7 @@ pub fn execute(
             let donation = Donation {
                 participant: info.sender,
                 amount,
-                message: msg.message
+                message: message.clone(),
             };
             if donation.amount.u128() > 0 {
                 let mut donations = DONATIONS.load(deps.storage)?;
