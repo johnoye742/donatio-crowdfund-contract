@@ -60,7 +60,8 @@ mod tests {
             description: String::from("need some funds"),
             amount_to_be_raised: 500.to_string(),
             denom: NATIVE_DENOM.into(),
-            image_url: String::new()
+            image_url: String::new(),
+            owner: USER.into_addr()
         };
         let cw_template_contract_addr = app
             .instantiate_contract(
@@ -81,7 +82,7 @@ mod tests {
     mod donations {
 
         use super::*;
-        use crate::{msg::{ExecuteMsg, QueryMsg}, state::Donation};
+        use crate::msg::{ExecuteMsg, QueryMsg};
 
         #[test]
         fn donate() {
