@@ -1,4 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Addr;
 
 use crate::state::{Donation, FundDetails};
 
@@ -10,7 +11,8 @@ pub struct InstantiateMsg {
     pub fullname: String,
     pub amount_to_be_raised: String,
     pub denom: String,
-    pub image_url: String
+    pub image_url: String,
+    pub owner: Addr
 }
 
 

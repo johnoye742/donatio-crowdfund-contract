@@ -22,7 +22,7 @@ pub fn instantiate(
     DONATIONS.save(deps.storage, &vec![])?;
     DETAILS.save(deps.storage, &FundDetails {
         owner: Owner {
-            addr: info.sender,
+            addr: msg.owner,
             email: msg.email,
             fullname: msg.fullname
         },
