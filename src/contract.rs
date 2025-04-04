@@ -12,6 +12,18 @@ const CONTRACT_NAME: &str = "crates.io:crowdfund-contract";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(deps: DepsMut, env: Env, msg: cosmwasm_std::Reply) -> StdResult<Response> {
+    if msg.id != 1 {
+        return Err(cosmwasm_std::StdError::generic_err("Invalid submsg id"));
+    }
+
+    // We received a message! From the contract we invoked earlier.
+    println!("{:?}", msg.result);
+
+    Ok(Response::default())
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
