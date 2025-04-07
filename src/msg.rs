@@ -34,4 +34,7 @@ pub enum QueryMsg {
 
     #[returns(FundDetails)]
     GetDetails {},
+
+    #[returns(u128)]
+    GetTotal {}
 }
