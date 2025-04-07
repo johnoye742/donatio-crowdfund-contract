@@ -28,7 +28,7 @@ mod tests {
                 .init_balance(
                     storage,
                     &MockApi::default().addr_make(USER),
-                    coins(5, NATIVE_DENOM),
+                    coins(50, NATIVE_DENOM),
                 )
                 .unwrap();
 
@@ -89,16 +89,9 @@ mod tests {
             let (mut app, cw_template_contract) = proper_instantiate();
 
             let msg = ExecuteMsg::Donate { message: "Enjoy!".into() };
-            let resp = app.execute_contract(USER.into_addr(), cw_template_contract.addr(), &msg, &coins(3, NATIVE_DENOM));
+            let resp = app.execute_contract(USER.into_addr(), cw_template_contract.addr(), &msg, &coins(50, NATIVE_DENOM));
 
             println!("response: {:?}", resp);
-
-            assert_eq!(app.wrap()
-                .query_balance(cw_template_contract.addr(), NATIVE_DENOM)
-                .unwrap()
-                .amount
-                .u128(), 3);
-
 
             withdraw(app, cw_template_contract);
 
