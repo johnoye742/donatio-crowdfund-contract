@@ -5,9 +5,11 @@ use cosmwasm_std::{Addr, Uint128};
 use cw_storage_plus::Item;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub struct State {
-    pub count: i32,
-    pub owner: Addr,
+pub enum State {
+    Open {},
+    Closed {},
+    Pending {},
+    Canceled {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
@@ -34,7 +36,7 @@ pub struct Donation {
     pub amount: Uint128
 }
 
-pub const STATE: Item<State> = Item::new("state");
+pub const STATE: Item<State> = Item::new("contract_state");
 
 pub const DETAILS: Item<FundDetails> = Item::new("fund_details");
 
