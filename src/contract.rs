@@ -1,11 +1,12 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128};
+use cosmwasm_std::{to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, WasmMsg};
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{Donation, FundDetails, Owner, DETAILS, DONATIONS};
+use donacio_governance::msg::ExecuteMsg as GovernanceExecuteMsg;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:crowdfund-contract";
@@ -60,6 +61,43 @@ pub fn execute(
         ExecuteMsg::Donate { message } => {
             let amount = cw_utils::may_pay(&info, &details.denom).unwrap();
 
+            let reward = if amount.u128() > 10 && amount.u128() < 50 {
+                "d-3"
+            } else if amount.u128() > 50 && amount.u128() < 70 {
+                "d-2"
+            } else if amount.u128() > 70 && amount.u128() < 100 {
+                "d-1"
+            } else if amount.u128() > 100 && amount.u128() < 500 {
+                "s"
+            } else if amount.u128() > 500 {
+                "elite"
+            } else {
+                ""
+            };
+
+            let token_uri: String = if reward == "elite" {
+                "https://ipfs.io/ipfs/bafkreiaceflv7edhh7wudylmoqsue7ggy2kmkvmjwlp57fah2syzcml7cq".into()
+            } else if reward == "s" {
+                "https://ipfs.io/ipfs/bafkreievs65xrrdzckzm2rsqvpw3htjolygji5nosudcgma7lfyifuvvmm".into()
+            } else if reward == "d-3" {
+                "https://ipfs.io/ipfs/bafkreiburzi2iphi5jf2rl2rzqvae6qrxgmpezguwbi65s5spzvgg5xyzu".into()
+            } else if reward == "d-2" {
+                "https://ipfs.io/ipfs/bafkreibiorot22hrse3qjsaomb7fcizujfnp7rte3koqboszgrjeh54ubu".into()
+            } else if reward == "d-1" {
+                "https://ipfs.io/ipfs/bafkreibeo3detwdrksydm7jrrbwdak6u53gjby5wcrcpky4mcehw4zb7hi".into()
+            } else {
+                "".into()
+            };
+
+
+            let nft_msg = WasmMsg::Execute { contract_addr: "xion1jgve7p9sx5wmm9x7dk6fmwawed7eekt2n7vj8jvhnhjcczfepmasf7p8vq".into(), msg: to_json_binary(&GovernanceExecuteMsg::IssueNFT {
+                user_addr: info.sender.clone(),
+                token_id: format!("{reward}-{}-{}", info.sender.clone(), env.block.height).into(),
+                token_uri,
+                nft_addr: "xion1rtp30fh4pltea8h8fkxalqeuztddaxgxpnjxam2d786axxthe0tqq5knek".into()
+            })?, funds: vec![] };
+
+
             let donation = Donation {
                 participant: info.sender,
                 amount,
@@ -72,6 +110,13 @@ pub fn execute(
                 DONATIONS.save(deps.storage, &donations)?;
             }
 
+            if amount.u128() > 10 {
+                return Ok(Response::new()
+                    .add_attribute("message", message)
+                    .add_message(nft_msg)
+                    .add_attribute("participant", &donation.participant.to_string())
+                    .add_attribute("amount", &donation.amount.to_string()))
+            }
             Ok(Response::new()
                 .add_attribute("message", message)
                 .add_attribute("participant", &donation.participant.to_string())
