@@ -5,7 +5,7 @@ use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Donation, FundDetails, Owner, DETAILS, DONATIONS};
+use crate::state::{Donation, FundDetails, Owner, State, DETAILS, DONATIONS, STATE};
 use donacio_governance::msg::ExecuteMsg as GovernanceExecuteMsg;
 
 // version info for migration info
@@ -33,6 +33,7 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     DONATIONS.save(deps.storage, &vec![])?;
+    STATE.save(deps.storage, &State::Open {  });
     DETAILS.save(deps.storage, &FundDetails {
         owner: Owner {
             addr: msg.owner,
@@ -57,70 +58,85 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     let details = DETAILS.load(deps.storage).unwrap();
+    let state = STATE.load(deps.storage).unwrap();
     match msg {
         ExecuteMsg::Donate { message } => {
-            let amount = cw_utils::may_pay(&info, &details.denom).unwrap();
+            match state {
+                State::Open { } => {
+                    let amount = cw_utils::may_pay(&info, &details.denom).unwrap();
 
-            let reward = if amount.u128() > 10 && amount.u128() < 50 {
-                "d-3"
-            } else if amount.u128() > 50 && amount.u128() < 70 {
-                "d-2"
-            } else if amount.u128() > 70 && amount.u128() < 100 {
-                "d-1"
-            } else if amount.u128() > 100 && amount.u128() < 500 {
-                "s"
-            } else if amount.u128() > 500 {
-                "elite"
-            } else {
-                ""
-            };
+                    let reward = if amount.u128() > 10 && amount.u128() < 50 {
+                        "d-3"
+                    } else if amount.u128() > 50 && amount.u128() < 70 {
+                        "d-2"
+                    } else if amount.u128() > 70 && amount.u128() < 100 {
+                        "d-1"
+                    } else if amount.u128() > 100 && amount.u128() < 500 {
+                        "s"
+                    } else if amount.u128() > 500 {
+                        "elite"
+                    } else {
+                        ""
+                    };
 
-            let token_uri: String = if reward == "elite" {
-                "https://ipfs.io/ipfs/bafkreiaceflv7edhh7wudylmoqsue7ggy2kmkvmjwlp57fah2syzcml7cq".into()
-            } else if reward == "s" {
-                "https://ipfs.io/ipfs/bafkreievs65xrrdzckzm2rsqvpw3htjolygji5nosudcgma7lfyifuvvmm".into()
-            } else if reward == "d-3" {
-                "https://ipfs.io/ipfs/bafkreiburzi2iphi5jf2rl2rzqvae6qrxgmpezguwbi65s5spzvgg5xyzu".into()
-            } else if reward == "d-2" {
-                "https://ipfs.io/ipfs/bafkreibiorot22hrse3qjsaomb7fcizujfnp7rte3koqboszgrjeh54ubu".into()
-            } else if reward == "d-1" {
-                "https://ipfs.io/ipfs/bafkreibeo3detwdrksydm7jrrbwdak6u53gjby5wcrcpky4mcehw4zb7hi".into()
-            } else {
-                "".into()
-            };
-
-
-            let nft_msg = WasmMsg::Execute { contract_addr: "xion1jgve7p9sx5wmm9x7dk6fmwawed7eekt2n7vj8jvhnhjcczfepmasf7p8vq".into(), msg: to_json_binary(&GovernanceExecuteMsg::IssueNFT {
-                user_addr: info.sender.clone(),
-                token_id: format!("{reward}-{}-{}", info.sender.clone(), env.block.height).into(),
-                token_uri,
-                nft_addr: "xion1rtp30fh4pltea8h8fkxalqeuztddaxgxpnjxam2d786axxthe0tqq5knek".into()
-            })?, funds: vec![] };
+                    let token_uri: String = if reward == "elite" {
+                        "https://ipfs.io/ipfs/bafkreiaceflv7edhh7wudylmoqsue7ggy2kmkvmjwlp57fah2syzcml7cq".into()
+                    } else if reward == "s" {
+                        "https://ipfs.io/ipfs/bafkreievs65xrrdzckzm2rsqvpw3htjolygji5nosudcgma7lfyifuvvmm".into()
+                    } else if reward == "d-3" {
+                        "https://ipfs.io/ipfs/bafkreiburzi2iphi5jf2rl2rzqvae6qrxgmpezguwbi65s5spzvgg5xyzu".into()
+                    } else if reward == "d-2" {
+                        "https://ipfs.io/ipfs/bafkreibiorot22hrse3qjsaomb7fcizujfnp7rte3koqboszgrjeh54ubu".into()
+                    } else if reward == "d-1" {
+                        "https://ipfs.io/ipfs/bafkreibeo3detwdrksydm7jrrbwdak6u53gjby5wcrcpky4mcehw4zb7hi".into()
+                    } else {
+                        "".into()
+                    };
 
 
-            let donation = Donation {
-                participant: info.sender,
-                amount,
-                message: message.clone(),
-            };
-            if donation.amount.u128() > 0 {
-                let mut donations = DONATIONS.load(deps.storage)?;
-                donations.push(donation.clone());
+                    let nft_msg = WasmMsg::Execute { contract_addr: "xion1jgve7p9sx5wmm9x7dk6fmwawed7eekt2n7vj8jvhnhjcczfepmasf7p8vq".into(), msg: to_json_binary(&GovernanceExecuteMsg::IssueNFT {
+                        user_addr: info.sender.clone(),
+                        token_id: format!("{reward}-{}-{}", info.sender.clone(), env.block.height).into(),
+                        token_uri,
+                        nft_addr: "xion1rtp30fh4pltea8h8fkxalqeuztddaxgxpnjxam2d786axxthe0tqq5knek".into()
+                    })?, funds: vec![] };
 
-                DONATIONS.save(deps.storage, &donations)?;
+
+                    let donation = Donation {
+                        participant: info.sender,
+                        amount,
+                        message: message.clone(),
+                    };
+                    if donation.amount.u128() > 0 {
+                        let mut donations = DONATIONS.load(deps.storage)?;
+                        donations.push(donation.clone());
+
+                        DONATIONS.save(deps.storage, &donations)?;
+                    }
+
+                    if amount.u128() > 10 {
+                        return Ok(Response::new()
+                            .add_attribute("message", message)
+                            .add_message(nft_msg)
+                            .add_attribute("participant", &donation.participant.to_string())
+                            .add_attribute("amount", &donation.amount.to_string()))
+                    }
+                    Ok(Response::new()
+                        .add_attribute("message", message)
+                        .add_attribute("participant", &donation.participant.to_string())
+                        .add_attribute("amount", &donation.amount.to_string()))
+
+                }
+                State::Closed {  } => {
+                    Err(crate::error::ContractError::FundraiserCloseed {  })
+                }
+                State::Pending {  } => {
+                    Err(crate::error::ContractError::FundraiserPending {  })
+                }
+                State::Canceled {  } => {
+                    Err(crate::error::ContractError::FundraiserCanceled {  })
+                }
             }
-
-            if amount.u128() > 10 {
-                return Ok(Response::new()
-                    .add_attribute("message", message)
-                    .add_message(nft_msg)
-                    .add_attribute("participant", &donation.participant.to_string())
-                    .add_attribute("amount", &donation.amount.to_string()))
-            }
-            Ok(Response::new()
-                .add_attribute("message", message)
-                .add_attribute("participant", &donation.participant.to_string())
-                .add_attribute("amount", &donation.amount.to_string()))
         },
         ExecuteMsg::Withdraw {  } => {
             let owner = &details.owner.addr;
@@ -145,6 +161,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         },
         QueryMsg::GetDetails { } => {
             to_json_binary(&DETAILS.load(deps.storage).unwrap())
+        },
+        QueryMsg::GetTotal {  } => {
+            let donations = &DONATIONS.load(deps.storage).unwrap_or(vec![]);
         }
     }
 }
