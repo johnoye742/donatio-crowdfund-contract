@@ -1,3 +1,5 @@
+use std::u128;
+
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, WasmMsg};
@@ -65,6 +67,7 @@ pub fn execute(
                 State::Open { } => {
                     let amount = cw_utils::may_pay(&info, &details.denom).unwrap();
 
+                    // close contract when the donations are more than 100% needed
                     let reward = if amount.u128() > 10 && amount.u128() < 50 {
                         "d-3"
                     } else if amount.u128() > 50 && amount.u128() < 70 {
@@ -164,6 +167,11 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         },
         QueryMsg::GetTotal {  } => {
             let donations = &DONATIONS.load(deps.storage).unwrap_or(vec![]);
+            let mut total: Uint128 = Uint128::new(0);
+            for donation in donations {
+                total += donation.amount;
+            }
+            to_json_binary(&total)
         }
     }
 }
