@@ -8,6 +8,15 @@ pub enum ContractError {
 
     #[error("Unauthorized")]
     Unauthorized {},
+
+    #[error("Fundraiser Closed")]
+    FundraiserCloseed {},
+
+    #[error("Fundraiser Pending, please wait.")]
+    FundraiserPending {},
+
+    #[error("This fundraiser has being cancelled")]
+    FundraiserCanceled {},
     // Add any other custom errors you like here.
     // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
 }
