@@ -10,7 +10,7 @@ pub enum ContractError {
     Unauthorized {},
 
     #[error("Fundraiser Closed")]
-    FundraiserCloseed {},
+    FundraiserClosed {},
 
     #[error("Fundraiser Pending, please wait.")]
     FundraiserPending {},
