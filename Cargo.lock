@@ -785,6 +785,7 @@ dependencies = [
  "cw-utils 2.0.0",
  "cw2 2.0.0",
  "donacio-governance",
+ "donatio-nfts",
  "schemars",
  "serde",
  "thiserror 1.0.69",
