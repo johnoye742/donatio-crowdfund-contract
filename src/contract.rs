@@ -2,7 +2,7 @@ use std::u128;
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, WasmMsg};
+use cosmwasm_std::{to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Storage, Uint128, WasmMsg};
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
@@ -68,42 +68,49 @@ pub fn execute(
                     let amount = cw_utils::may_pay(&info, &details.denom).unwrap();
 
                     // close contract when the donations are more than 100% needed
-                    let reward = if amount.u128() > 10 && amount.u128() < 50 {
-                        "d-3"
-                    } else if amount.u128() > 50 && amount.u128() < 70 {
-                        "d-2"
-                    } else if amount.u128() > 70 && amount.u128() < 100 {
-                        "d-1"
-                    } else if amount.u128() > 100 && amount.u128() < 500 {
-                        "s"
-                    } else if amount.u128() > 500 {
-                        "elite"
-                    } else {
-                        ""
+
+                    let donations = &DONATIONS.load(deps.storage).unwrap_or(vec![]);
+                    let mut total: Uint128 = Uint128::new(0);
+                    for donation in donations {
+                        total += donation.amount;
+                    }
+                    if (total + Uint128::new(amount.u128())) >= Uint128::new(details.amount_to_be_raised.into()) {
+                        STATE.save(deps.storage, &State::Closed {  })?;
+                    }
+
+                    let mut actual_amount = amount.u128();
+
+                    if details.denom.to_lowercase() == "uxion" {
+                        actual_amount = amount.u128() / 100000;
+                    }
+
+                    let (maybe_reward, maybe_uri) = match actual_amount {
+                        11..=49 => (Some("d-3"), Some("https://ipfs.io/ipfs/bafkreiburzi2iphi5jf2rl2rzqvae6qrxgmpezguwbi65s5spzvgg5xyzu")),
+                        50..=69 => (Some("d-2"), Some("https://ipfs.io/ipfs/bafkreibiorot22hrse3qjsaomb7fcizujfnp7rte3koqboszgrjeh54ubu")),
+                        70..=99 => (Some("d-1"), Some("https://ipfs.io/ipfs/bafkreibeo3detwdrksydm7jrrbwdak6u53gjby5wcrcpky4mcehw4zb7hi")),
+                        100..=499 => (Some("s"), Some("https://ipfs.io/ipfs/bafkreievs65xrrdzckzm2rsqvpw3htjolygji5nosudcgma7lfyifuvvmm")),
+                        500..=u128::MAX => (Some("elite"), Some("https://ipfs.io/ipfs/bafkreiaceflv7edhh7wudylmoqsue7ggy2kmkvmjwlp57fah2syzcml7cq")),
+                        _ => (None, None),
                     };
 
-                    let token_uri: String = if reward == "elite" {
-                        "https://ipfs.io/ipfs/bafkreiaceflv7edhh7wudylmoqsue7ggy2kmkvmjwlp57fah2syzcml7cq".into()
-                    } else if reward == "s" {
-                        "https://ipfs.io/ipfs/bafkreievs65xrrdzckzm2rsqvpw3htjolygji5nosudcgma7lfyifuvvmm".into()
-                    } else if reward == "d-3" {
-                        "https://ipfs.io/ipfs/bafkreiburzi2iphi5jf2rl2rzqvae6qrxgmpezguwbi65s5spzvgg5xyzu".into()
-                    } else if reward == "d-2" {
-                        "https://ipfs.io/ipfs/bafkreibiorot22hrse3qjsaomb7fcizujfnp7rte3koqboszgrjeh54ubu".into()
-                    } else if reward == "d-1" {
-                        "https://ipfs.io/ipfs/bafkreibeo3detwdrksydm7jrrbwdak6u53gjby5wcrcpky4mcehw4zb7hi".into()
-                    } else {
-                        "".into()
-                    };
+                    let mut res = Response::new();
 
+                    if let (Some(reward), Some(token_uri)) = (maybe_reward, maybe_uri) {
+                        let token_id = format!("{}-{}-{}", reward, env.block.height, info.sender);
 
-                    let nft_msg = WasmMsg::Execute { contract_addr: "xion1jgve7p9sx5wmm9x7dk6fmwawed7eekt2n7vj8jvhnhjcczfepmasf7p8vq".into(), msg: to_json_binary(&GovernanceExecuteMsg::IssueNFT {
-                        user_addr: info.sender.clone(),
-                        token_id: format!("{reward}-{}-{}", info.sender.clone(), env.block.height).into(),
-                        token_uri,
-                        nft_addr: "xion1rtp30fh4pltea8h8fkxalqeuztddaxgxpnjxam2d786axxthe0tqq5knek".into()
-                    })?, funds: vec![] };
+                        let nft_msg = WasmMsg::Execute {
+                            contract_addr: "xion1jgve7p9sx5wmm9x7dk6fmwawed7eekt2n7vj8jvhnhjcczfepmasf7p8vq".into(),
+                            msg: to_json_binary(&GovernanceExecuteMsg::IssueNFT {
+                                user_addr: info.sender.clone(),
+                                token_id,
+                                token_uri: token_uri.to_string(),
+                                nft_addr: "xion1rtp30fh4pltea8h8fkxalqeuztddaxgxpnjxam2d786axxthe0tqq5knek".into(),
+                            })?,
+                            funds: vec![],
+                        };
 
+                        res = res.add_message(nft_msg);
+                    }
 
                     let donation = Donation {
                         participant: info.sender,
@@ -117,21 +124,14 @@ pub fn execute(
                         DONATIONS.save(deps.storage, &donations)?;
                     }
 
-                    if amount.u128() > 10 {
-                        return Ok(Response::new()
-                            .add_attribute("message", message)
-                            .add_message(nft_msg)
-                            .add_attribute("participant", &donation.participant.to_string())
-                            .add_attribute("amount", &donation.amount.to_string()))
-                    }
-                    Ok(Response::new()
+                    Ok(res
                         .add_attribute("message", message)
                         .add_attribute("participant", &donation.participant.to_string())
                         .add_attribute("amount", &donation.amount.to_string()))
 
                 }
                 State::Closed {  } => {
-                    Err(crate::error::ContractError::FundraiserCloseed {  })
+                    Err(crate::error::ContractError::FundraiserClosed {  })
                 }
                 State::Pending {  } => {
                     Err(crate::error::ContractError::FundraiserPending {  })
