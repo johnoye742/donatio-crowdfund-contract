@@ -25,7 +25,7 @@ mod tests {
 
     const USER: &str = "USER";
     const ADMIN: &str = "ADMIN";
-    const NATIVE_DENOM: &str = "eth";
+    const NATIVE_DENOM: &str = "uxion";
 
     fn mock_app() -> App {
         App::new(|router, _, storage| {
@@ -96,8 +96,8 @@ mod tests {
 
             let msg = ExecuteMsg::Donate { message: "Enjoy!".into() };
             let resp = app.execute_contract(USER.into_addr(), cw_template_contract.addr(), &msg, &coins(5, NATIVE_DENOM));
-            app.execute_contract(USER.into_addr(), cw_template_contract.addr(), &msg, &coins(5, NATIVE_DENOM));
-            app.execute_contract(USER.into_addr(), cw_template_contract.addr(), &msg, &coins(5, NATIVE_DENOM));
+            app.execute_contract(USER.into_addr(), cw_template_contract.addr(), &msg, &coins(5*1000000, NATIVE_DENOM));
+            app.execute_contract(USER.into_addr(), cw_template_contract.addr(), &msg, &coins(5*1000000, NATIVE_DENOM));
             println!("response: {:?}", resp);
 
             query_total(&app, cw_template_contract.clone());
