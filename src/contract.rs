@@ -78,13 +78,7 @@ pub fn execute(
                         STATE.save(deps.storage, &State::Closed {  })?;
                     }
 
-                    let mut actual_amount = amount.u128();
-
-                    if details.denom.to_lowercase() == "uxion" {
-                        actual_amount = amount.u128() / 100000;
-                    }
-
-                    let (maybe_reward, maybe_uri) = match actual_amount {
+                    let (maybe_reward, maybe_uri) = match amount.u128() {
                         11..=49 => (Some("d-3"), Some("https://ipfs.io/ipfs/bafkreiburzi2iphi5jf2rl2rzqvae6qrxgmpezguwbi65s5spzvgg5xyzu")),
                         50..=69 => (Some("d-2"), Some("https://ipfs.io/ipfs/bafkreibiorot22hrse3qjsaomb7fcizujfnp7rte3koqboszgrjeh54ubu")),
                         70..=99 => (Some("d-1"), Some("https://ipfs.io/ipfs/bafkreibeo3detwdrksydm7jrrbwdak6u53gjby5wcrcpky4mcehw4zb7hi")),
