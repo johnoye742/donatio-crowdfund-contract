@@ -17,6 +17,11 @@ pub enum ContractError {
 
     #[error("This fundraiser has being cancelled")]
     FundraiserCanceled {},
-    // Add any other custom errors you like here.
-    // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
+
+    #[error("Cannot widthdraw because the fundraiser is still at {current_balance:?} and we need {expected_amount:?}")]
+    WithdrawalNotExpectedError {
+        expected_amount: u128,
+        current_balance: u128,
+        denom: String
+    }
 }
