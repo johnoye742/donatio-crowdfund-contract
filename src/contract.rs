@@ -78,7 +78,10 @@ pub fn execute(
                         STATE.save(deps.storage, &State::Closed {  })?;
                     }
 
-                    let (maybe_reward, maybe_uri) = match amount.u128() {
+                    dbg!(amount.u128() / 1_000_000);
+                    let actual_amount = amount.u128() / 1_000_000;
+
+                    let (maybe_reward, maybe_uri) = match actual_amount {
                         11..=49 => (Some("d-3"), Some("https://ipfs.io/ipfs/bafkreiburzi2iphi5jf2rl2rzqvae6qrxgmpezguwbi65s5spzvgg5xyzu")),
                         50..=69 => (Some("d-2"), Some("https://ipfs.io/ipfs/bafkreibiorot22hrse3qjsaomb7fcizujfnp7rte3koqboszgrjeh54ubu")),
                         70..=99 => (Some("d-1"), Some("https://ipfs.io/ipfs/bafkreibeo3detwdrksydm7jrrbwdak6u53gjby5wcrcpky4mcehw4zb7hi")),
@@ -89,7 +92,7 @@ pub fn execute(
 
                     let mut res = Response::new();
 
-                    if let (Some(reward), Some(token_uri)) = (maybe_reward, maybe_uri) {
+                    if let (Some(reward), Some(token_uri)) =  (maybe_reward, maybe_uri)  {
                         let token_id = format!("{}-{}-{}", reward, env.block.height, info.sender);
 
                         let nft_msg = WasmMsg::Execute {
@@ -103,7 +106,10 @@ pub fn execute(
                             funds: vec![],
                         };
 
-                        res = res.add_message(nft_msg);
+                        if details.denom == "uxion" || details.denom == "uusdc" {
+                            res = res.add_message(nft_msg);
+
+                        }
                     }
 
                     let donation = Donation {
@@ -119,7 +125,6 @@ pub fn execute(
                     }
 
                     Ok(res
-                        .add_attribute("message", message)
                         .add_attribute("participant", &donation.participant.to_string())
                         .add_attribute("amount", &donation.amount.to_string()))
 
@@ -137,9 +142,12 @@ pub fn execute(
         },
         ExecuteMsg::Withdraw {  } => {
             let owner = &details.owner.addr;
+            let current_balance = deps.querier.query_balance(&env.contract.address, &details.denom).unwrap().amount;
 
-            if info.sender != owner && deps.querier.query_balance(&env.contract.address, &details.denom).unwrap().amount < details.amount_to_be_raised {
-                Ok(Response::new())
+            if info.sender != owner {
+                Err(crate::error::ContractError::Unauthorized {  })
+            } else if current_balance < details.amount_to_be_raised {
+                Err(crate::error::ContractError::WithdrawalNotExpectedError { expected_amount: details.amount_to_be_raised.into(), current_balance: current_balance.into(), denom: details.denom })
             } else {
                 let msg = BankMsg::Send { to_address: (owner).to_string(), amount: vec![deps.querier.query_balance(env.contract.address, details.denom)?] };
                 Ok(Response::new()
